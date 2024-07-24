@@ -7,23 +7,14 @@ fn match_pattern(input_line: &str, pattern: &str) -> bool {
         r"\d" => input_line.find(|c: char| c.is_ascii_digit()).is_some(),
         r"\w" => input_line.find(|c: char| c.is_alphanumeric()).is_some(),
         _char if pattern.chars().count() == 1 => input_line.contains(pattern),
-        str if pattern.starts_with('[') => {
-            let mut result = false;
-            if !str.ends_with(']') {
-                return false
-            }
-            for char in str.chars() {
-                match char {
-                    '[' => continue,
-                    ']' => break,
-                    c => if match_pattern(input_line, c.to_string().as_str()) {
-                        result = true;
-                        break
-                    }
-                }
-            }
-            result
-        }
+        str if pattern.starts_with("[^") && pattern.ends_with(']') => str
+        .chars()
+            .filter(|c| *c != '[' && *c != ']' && *c != '^')
+            .all(|c| !match_pattern(input_line, c.to_string().as_str())),
+        str if pattern.starts_with('[') && pattern.ends_with(']') => str
+            .chars()
+            .filter(|c| *c != '[' && *c != ']')
+            .any(|c| match_pattern(input_line, c.to_string().as_str())),
         _ => panic!("Unhandled pattern: {}", pattern),
     }
 }
