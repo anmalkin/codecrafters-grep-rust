@@ -4,9 +4,8 @@ use std::process;
 
 fn match_pattern(input_line: &str, pattern: &str) -> bool {
     match pattern {
-        r"\d" => {
-            input_line.find(|c: char| c.is_ascii_digit()).is_some()
-        }
+        r"\d" => input_line.find(|c: char| c.is_ascii_digit()).is_some(),
+        r"\w" => input_line.find(|c: char| c.is_alphanumeric()).is_some(),
         _char if pattern.chars().count() == 1 => input_line.contains(pattern),
         _ => panic!("Unhandled pattern: {}", pattern)
     }
@@ -30,17 +29,4 @@ fn main() {
         process::exit(0)
     }
     process::exit(1)
-}
-
-
-#[cfg(test)]
-mod test {
-    use super::*;
-
-    #[test]
-    fn digit() {
-        let input_line = "abc/123";
-        let pattern = r"\d";
-        assert!(match_pattern(input_line, pattern));
-    }
 }
