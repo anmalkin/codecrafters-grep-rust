@@ -3,10 +3,12 @@ use std::io;
 use std::process;
 
 fn match_pattern(input_line: &str, pattern: &str) -> bool {
-    if pattern.chars().count() == 1 {
-        return input_line.contains(pattern);
-    } else {
-        panic!("Unhandled pattern: {}", pattern)
+    match pattern {
+        r"\d" => {
+            input_line.find(|c: char| c.is_ascii_digit()).is_some()
+        }
+        _char if pattern.chars().count() == 1 => input_line.contains(pattern),
+        _ => panic!("Unhandled pattern: {}", pattern)
     }
 }
 
@@ -26,7 +28,19 @@ fn main() {
 
     if match_pattern(&input_line, &pattern) {
         process::exit(0)
-    } else {
-        process::exit(1)
+    }
+    process::exit(1)
+}
+
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn digit() {
+        let input_line = "abc/123";
+        let pattern = r"\d";
+        assert!(match_pattern(input_line, pattern));
     }
 }
