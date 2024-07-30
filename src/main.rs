@@ -8,23 +8,6 @@ enum MatchResult<'a> {
     BadFormat,
 }
 
-// fn match_pattern(input_line: &str, pattern: &str) -> bool {
-//     match pattern {
-//         r"\d" => input_line.find(|c: char| c.is_ascii_digit()).is_some(),
-//         r"\w" => input_line.find(|c: char| c.is_alphanumeric()).is_some(),
-//         _char if pattern.chars().count() == 1 => input_line.contains(pattern),
-//         str if pattern.starts_with("[^") && pattern.ends_with(']') => str
-//             .chars()
-//             .filter(|c| *c != '[' && *c != ']' && *c != '^')
-//             .all(|c| !match_pattern(input_line, c.to_string().as_str())),
-//         str if pattern.starts_with('[') && pattern.ends_with(']') => str
-//             .chars()
-//             .filter(|c| *c != '[' && *c != ']')
-//             .any(|c| match_pattern(input_line, c.to_string().as_str())),
-//         _ => panic!("Unhandled pattern: {}", pattern),
-//     }
-// }
-
 fn match_pattern(input_line: &str, pattern: &str) -> bool {
     let mut remaining = input_line;
     while !remaining.is_empty() {
@@ -50,6 +33,7 @@ fn match_here<'a>(input_line: &'a str, pattern: &str) -> MatchResult<'a> {
             Some('w') if input_chars.next().is_some_and(|i| i.is_alphanumeric()) => {
                 match_here(&input_line[1..], &pattern[2..])
             }
+            Some('w' | 'd') => MatchResult::Remaining(&input_line[1..]),
             _ => MatchResult::BadFormat,
         },
         Some('[') => {
@@ -87,6 +71,7 @@ fn match_here<'a>(input_line: &'a str, pattern: &str) -> MatchResult<'a> {
         Some(p) if input_chars.next().is_some_and(|i| i == p) => {
             match_here(&input_line[1..], &pattern[1..])
         }
+        Some(_) if input_chars.next().is_none() => MatchResult::Remaining(""),
         Some(_) => MatchResult::Remaining(&input_line[1..]),
         None => MatchResult::Match,
     }
