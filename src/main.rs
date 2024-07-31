@@ -80,6 +80,10 @@ fn match_here<'a>(input_line: &'a str, pattern: &str) -> MatchResult<'a> {
             }
             MatchResult::Failure
         }
+        // Wildcard
+        Some('.') => {
+            match_here(&input_line[1..], &pattern[1..])
+        }
         // One or more
         Some(p) if p.is_ascii_alphanumeric() && pattern_chars.peek().is_some_and(|c| *c == '+') => {
             if let MatchResult::Remaining(remaining) = one_or_more(input_line, p) {
