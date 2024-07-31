@@ -30,7 +30,7 @@ fn match_pattern(input_line: &str, pattern: &str) -> bool {
 
 fn match_here<'a>(input_line: &'a str, pattern: &str) -> MatchResult<'a> {
     let mut input_chars = input_line.chars();
-    let mut pattern_chars = pattern.chars();
+    let mut pattern_chars = pattern.chars().peekable();
     match pattern_chars.next() {
         Some('\\') => match pattern_chars.next() {
             Some('d') if input_chars.next().is_some_and(|i| i.is_ascii_digit()) => {
@@ -80,13 +80,34 @@ fn match_here<'a>(input_line: &'a str, pattern: &str) -> MatchResult<'a> {
             }
             MatchResult::Failure
         }
+        Some(p) if p.is_ascii_alphanumeric() && pattern_chars.peek().is_some_and(|c| *c == '+') => {
+            if let MatchResult::Remaining(remaining) = match_sequence(input_line, p) {
+               return match_here(remaining, &pattern[1..])
+            }
+            MatchResult::Remaining(&input_line[1..])
+        }
         Some(p) if input_chars.next().is_some_and(|i| i == p) => {
             match_here(&input_line[1..], &pattern[1..])
         }
-        Some(_) if input_chars.next().is_none() => MatchResult::Remaining(""),
+        Some(_) if input_chars.next().is_none() => MatchResult::Failure,
         Some(_) => MatchResult::Remaining(&input_line[1..]),
         None => MatchResult::Success,
     }
+}
+
+fn match_sequence(input_line: &str, char: char) -> MatchResult {
+    let mut end = 1;
+    let mut chars = input_line.chars().peekable();
+    if !chars.peek().is_some_and(|c| *c == char) {
+        return MatchResult::Failure
+    }
+    for c in chars {
+        if c != char {
+            break;
+        }
+        end += 1;
+    }
+    MatchResult::Remaining(&input_line[..end])
 }
 
 fn match_pos_group<'a>(input_line: &'a str, group: &str) -> MatchResult<'a> {
