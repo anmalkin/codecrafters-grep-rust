@@ -11,9 +11,9 @@ enum MatchResult<'a> {
 fn match_pattern(input_line: &str, pattern: &str) -> bool {
     if let Some(pattern) = pattern.strip_prefix('^') {
         if let MatchResult::Success = match_here(input_line, pattern) {
-            return true
+            return true;
         }
-        return false
+        return false;
     }
     let mut remaining = input_line;
     while !remaining.is_empty() {
@@ -69,22 +69,30 @@ fn match_here<'a>(input_line: &'a str, pattern: &str) -> MatchResult<'a> {
             let group = &pattern[start..end];
 
             if is_negative {
-                match_neg_group(input_line, group)
+                neg_group(input_line, group)
             } else {
-                match_pos_group(input_line, group)
+                pos_group(input_line, group)
             }
         }
         Some('$') => {
             if input_chars.next().is_none() {
-                return MatchResult::Success
+                return MatchResult::Success;
             }
             MatchResult::Failure
         }
+        // One or more
         Some(p) if p.is_ascii_alphanumeric() && pattern_chars.peek().is_some_and(|c| *c == '+') => {
-            if let MatchResult::Remaining(remaining) = match_sequence(input_line, p) {
-               return match_here(remaining, &pattern[2..])
+            if let MatchResult::Remaining(remaining) = one_or_more(input_line, p) {
+                return match_here(remaining, &pattern[2..]);
             }
             MatchResult::Remaining(&input_line[1..])
+        }
+        // Zero or one
+        Some(p) if p.is_ascii_alphanumeric() && pattern_chars.peek().is_some_and(|c| *c == '?') => {
+            if input_chars.next().is_some_and(|c| c == p) {
+                return match_here(&input_line[1..], &pattern[2..])
+            }
+            match_here(input_line, &pattern[2..])
         }
         Some(p) if input_chars.next().is_some_and(|i| i == p) => {
             match_here(&input_line[1..], &pattern[1..])
@@ -95,11 +103,11 @@ fn match_here<'a>(input_line: &'a str, pattern: &str) -> MatchResult<'a> {
     }
 }
 
-fn match_sequence(input_line: &str, char: char) -> MatchResult {
+fn one_or_more(input_line: &str, char: char) -> MatchResult {
     let mut start = 0;
     let mut chars = input_line.chars().peekable();
     if !chars.peek().is_some_and(|c| *c == char) {
-        return MatchResult::Failure
+        return MatchResult::Failure;
     }
     for c in chars {
         if c != char {
@@ -110,7 +118,7 @@ fn match_sequence(input_line: &str, char: char) -> MatchResult {
     MatchResult::Remaining(&input_line[start..])
 }
 
-fn match_pos_group<'a>(input_line: &'a str, group: &str) -> MatchResult<'a> {
+fn pos_group<'a>(input_line: &'a str, group: &str) -> MatchResult<'a> {
     if let Some(c) = input_line.chars().next() {
         for char in group.chars() {
             if c == char {
@@ -122,7 +130,7 @@ fn match_pos_group<'a>(input_line: &'a str, group: &str) -> MatchResult<'a> {
     MatchResult::Remaining(input_line)
 }
 
-fn match_neg_group<'a>(input_line: &'a str, group: &str) -> MatchResult<'a> {
+fn neg_group<'a>(input_line: &'a str, group: &str) -> MatchResult<'a> {
     if let Some(c) = input_line.chars().next() {
         for char in group.chars() {
             if c == char {
@@ -133,7 +141,6 @@ fn match_neg_group<'a>(input_line: &'a str, group: &str) -> MatchResult<'a> {
     }
     MatchResult::Remaining(input_line)
 }
-
 
 // Usage: echo <input_text> | your_program.sh -E <pattern>
 fn main() {
