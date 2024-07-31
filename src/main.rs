@@ -82,7 +82,7 @@ fn match_here<'a>(input_line: &'a str, pattern: &str) -> MatchResult<'a> {
         }
         Some(p) if p.is_ascii_alphanumeric() && pattern_chars.peek().is_some_and(|c| *c == '+') => {
             if let MatchResult::Remaining(remaining) = match_sequence(input_line, p) {
-               return match_here(remaining, &pattern[1..])
+               return match_here(remaining, &pattern[2..])
             }
             MatchResult::Remaining(&input_line[1..])
         }
@@ -96,7 +96,7 @@ fn match_here<'a>(input_line: &'a str, pattern: &str) -> MatchResult<'a> {
 }
 
 fn match_sequence(input_line: &str, char: char) -> MatchResult {
-    let mut end = 1;
+    let mut start = 0;
     let mut chars = input_line.chars().peekable();
     if !chars.peek().is_some_and(|c| *c == char) {
         return MatchResult::Failure
@@ -105,9 +105,9 @@ fn match_sequence(input_line: &str, char: char) -> MatchResult {
         if c != char {
             break;
         }
-        end += 1;
+        start += 1;
     }
-    MatchResult::Remaining(&input_line[..end])
+    MatchResult::Remaining(&input_line[start..])
 }
 
 fn match_pos_group<'a>(input_line: &'a str, group: &str) -> MatchResult<'a> {
