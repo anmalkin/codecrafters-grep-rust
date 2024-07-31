@@ -9,6 +9,12 @@ enum MatchResult<'a> {
 }
 
 fn match_pattern(input_line: &str, pattern: &str) -> bool {
+    if let Some(pattern) = pattern.strip_prefix('^') {
+        if let MatchResult::Match = match_here(input_line, pattern) {
+            return true
+        }
+        return false
+    }
     let mut remaining = input_line;
     while !remaining.is_empty() {
         match match_here(remaining, pattern) {
