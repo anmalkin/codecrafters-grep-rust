@@ -3,14 +3,14 @@ use std::io;
 use std::process;
 
 enum MatchResult<'a> {
-    Match,
+    Success,
     Remaining(&'a str),
-    BadFormat,
+    Failure,
 }
 
 fn match_pattern(input_line: &str, pattern: &str) -> bool {
     if let Some(pattern) = pattern.strip_prefix('^') {
-        if let MatchResult::Match = match_here(input_line, pattern) {
+        if let MatchResult::Success = match_here(input_line, pattern) {
             return true
         }
         return false
@@ -18,8 +18,8 @@ fn match_pattern(input_line: &str, pattern: &str) -> bool {
     let mut remaining = input_line;
     while !remaining.is_empty() {
         match match_here(remaining, pattern) {
-            MatchResult::Match => return true,
-            MatchResult::BadFormat => return false,
+            MatchResult::Success => return true,
+            MatchResult::Failure => return false,
             MatchResult::Remaining(str) => {
                 remaining = str;
             }
@@ -40,7 +40,7 @@ fn match_here<'a>(input_line: &'a str, pattern: &str) -> MatchResult<'a> {
                 match_here(&input_line[1..], &pattern[2..])
             }
             Some('w' | 'd') => MatchResult::Remaining(&input_line[1..]),
-            _ => MatchResult::BadFormat,
+            _ => MatchResult::Failure,
         },
         Some('[') => {
             let mut is_negative = false;
@@ -48,7 +48,7 @@ fn match_here<'a>(input_line: &'a str, pattern: &str) -> MatchResult<'a> {
             let mut end = 1;
             for char in pattern_chars {
                 if char == '[' {
-                    return MatchResult::BadFormat;
+                    return MatchResult::Failure;
                 }
                 if char == '^' {
                     is_negative = true;
@@ -63,7 +63,7 @@ fn match_here<'a>(input_line: &'a str, pattern: &str) -> MatchResult<'a> {
             }
 
             if end == pattern.len() {
-                return MatchResult::BadFormat;
+                return MatchResult::Failure;
             }
 
             let group = &pattern[start..end];
@@ -74,12 +74,18 @@ fn match_here<'a>(input_line: &'a str, pattern: &str) -> MatchResult<'a> {
                 match_pos_group(input_line, group)
             }
         }
+        Some('$') => {
+            if input_chars.next().is_none() {
+                return MatchResult::Success
+            }
+            MatchResult::Failure
+        }
         Some(p) if input_chars.next().is_some_and(|i| i == p) => {
             match_here(&input_line[1..], &pattern[1..])
         }
         Some(_) if input_chars.next().is_none() => MatchResult::Remaining(""),
         Some(_) => MatchResult::Remaining(&input_line[1..]),
-        None => MatchResult::Match,
+        None => MatchResult::Success,
     }
 }
 
@@ -87,7 +93,7 @@ fn match_pos_group<'a>(input_line: &'a str, group: &str) -> MatchResult<'a> {
     if let Some(c) = input_line.chars().next() {
         for char in group.chars() {
             if c == char {
-                return MatchResult::Match;
+                return MatchResult::Success;
             }
         }
         return MatchResult::Remaining(&input_line[1..]);
@@ -102,7 +108,7 @@ fn match_neg_group<'a>(input_line: &'a str, group: &str) -> MatchResult<'a> {
                 return MatchResult::Remaining(&input_line[1..]);
             }
         }
-        return MatchResult::Match;
+        return MatchResult::Success;
     }
     MatchResult::Remaining(input_line)
 }
